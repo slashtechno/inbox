@@ -1,17 +1,30 @@
-from sqlmodel import Field, SQLModel, col, create_engine, Session, select
+from sqlmodel import Field, SQLModel, col, create_engine, Session, select, Relationship
 from inbox import settings
+
+
+class Inbox(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    name: str = Field(index=True)
+
+    # Seems putting Message in quotes is a form of a forward reference
+    # Setting cascade_delete to true means that if the inbox is deleted, all the messages will be too. By default, without this, their inbox value would just be set to null
+    # cascade_delete only works with deletions from within the program but should coexist with ondelete (https://sqlmodel.tiangolo.com/tutorial/relationship-attributes/cascade-delete-relationships/#using-cascade_delete-or-ondelete)
+    messages: list["Message"] = Relationship(back_populates="inbox", cascade_delete=True)
 
 
 class Message(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     # https://sqlmodel.tiangolo.com/tutorial/indexes
     text: str = Field(index=True)
-    inbox_id: int | None = Field(foreign_key="inbox.id", default="1")
 
+    # https://sqlmodel.tiangolo.com/tutorial/relationship-attributes/back-populates/#a-mental-trick-to-remember-back_populates
+    # ondelete options, as described in the docs (https://sqlmodel.tiangolo.com/tutorial/relationship-attributes/cascade-delete-relationships/#set-ondelete-to-cascade):
+    # CASCADE: Automatically delete this record (hero) when the related one (team) is deleted.
+    # SET NULL: Set this foreign key (hero.team_id) field to NULL when the related record is deleted.
+    # RESTRICT: Prevent the deletion of this record (hero) if there is a foreign key value by raising an error.
 
-class Inbox(SQLModel, table=True):
-    id: int | None = Field(default=None, primary_key=True)
-    name: str = Field(index=True)
+    inbox_id: int | None = Field(foreign_key="inbox.id", default="1", ondelete="CASCADE")
+    inbox: Inbox | None = Relationship(back_populates="messages")
 
 
 # Print SQL statements in echo is True
@@ -25,18 +38,24 @@ def create_db_and_tables():
 
 def create_test_message():
     with Session(engine) as session:
-        # Create inboxes
-        inbox = Inbox(name="Primary Inbox")
-        inbox = Inbox(name="Secondary Inbox")
-        session.add(inbox)
+        # Create a primary inbox
+        inbox_primary = Inbox(name="Primary Inbox")
 
         # Create a Message object
-        test_messages = [Message(text="Hello, SQL!", inbox_id=inbox.id), Message(text="Hi, SQL!", inbox_id=inbox.id)]
-        # Add the object to the session
+        test_messages = [
+            Message(text="Hello, SQL!", inbox=inbox_primary),
+            Message(text="Hi, SQL!", )
+        ]
+
+        # Add the second message to the secondary inbox
+        inbox_secondary = Inbox(name="Secondary Inbox", messages=[test_messages[1]])
+        print(inbox_secondary.messages)
+        
+        # Add the objects to the session
         [session.add(m) for m in test_messages]
         session.commit()
         # access a single field that'll be refreshed (https://sqlmodel.tiangolo.com/tutorial/automatic-id-none-refresh/#print-a-single-field)
-        print(f"test_message text: {test_messages[0].text}")
+        print(f"test_message inbox: {test_messages[0].inbox}")
         # Explicitly refresh the entire object
         session.refresh(test_messages[0])
         print(f"test_message: {test_messages[0]}")
@@ -68,11 +87,11 @@ def read_data():
         # Unlike .one, .get will return None instead of an error if there is no match
         message = session.get(Message, 2)
         print(f"Row 2: {message}")
+        # https://sqlmodel.tiangolo.com/tutorial/relationship-attributes/read-relationships/#get-relationship-team-new-way
+        print(f"Message/row 2's inbox: {message.inbox}")
 
         # Get messages and their inbox relations
-        statement = select(
-            Message, Inbox
-        ).where(col(Inbox.id) == col(Message.inbox_id))
+        statement = select(Message, Inbox).where(col(Inbox.id) == col(Message.inbox_id))
         results = session.exec(statement)
         for m, i in results:
             print(f"Inbox: {i} | Message: {m}")
@@ -84,7 +103,11 @@ def read_data():
         print("Using Join:")
         for m, i in results:
             print(f"Inbox: {i} | Message: {m}")
-        
+
+        # Print the primary inbox's messages
+        statement = select(Inbox).where(col(Inbox.name) == "Primary Inbox")
+        primary_inbox = session.exec(statement).one()
+        print(f"Primary inbox messages: {primary_inbox.messages}")
 
 def batch_read():
     with Session(engine) as session:
@@ -125,13 +148,13 @@ def update():
         # Explicitly refresh and print
         session.refresh(message)
         print(f"Updated message: {message}")
-        
+
         # Remove relation
-        message.inbox_id = None
+        message.inbox = None
         session.add(message)
         session.commit()
         session.refresh(message)
-        print(f"Unliked from inbox: {message}")
+        print(f"Unlinked from inbox: {message} | inbox: {message.inbox}")
 
 
 def delete():
