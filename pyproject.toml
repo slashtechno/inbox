@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "inbox"
+version = "0.1.0"
+description = "An API that allows anyone to POST a public inbox that can be fetched by the instance owner."
+authors = ["slashtechno <77907286+slashtechno@users.noreply.github.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = {extras = ["standard"], version = "^0.115.6"}
+dynaconf = "^3.2.6"
+sqlmodel = "^0.0.22"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

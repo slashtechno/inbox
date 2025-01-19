@@ -1,0 +1,1 @@
+from inbox.config import settings as settings
