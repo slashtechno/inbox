@@ -6,10 +6,16 @@ class Message(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     # https://sqlmodel.tiangolo.com/tutorial/indexes
     text: str = Field(index=True)
+    inbox_id: int | None = Field(foreign_key="inbox.id", default="1")
 
 
-# Echo SQL statements
-engine = create_engine(settings.db_url, echo=True)
+class Inbox(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    name: str = Field(index=True)
+
+
+# Print SQL statements in echo is True
+engine = create_engine(settings.db_url, echo=False)
 
 
 def create_db_and_tables():
@@ -18,9 +24,14 @@ def create_db_and_tables():
 
 
 def create_test_message():
-    # Create a Message object
-    test_messages = [Message(text="Hello, SQL!"), Message(text="Hi, SQL!")]
     with Session(engine) as session:
+        # Create inboxes
+        inbox = Inbox(name="Primary Inbox")
+        inbox = Inbox(name="Secondary Inbox")
+        session.add(inbox)
+
+        # Create a Message object
+        test_messages = [Message(text="Hello, SQL!", inbox_id=inbox.id), Message(text="Hi, SQL!", inbox_id=inbox.id)]
         # Add the object to the session
         [session.add(m) for m in test_messages]
         session.commit()
@@ -58,6 +69,22 @@ def read_data():
         message = session.get(Message, 2)
         print(f"Row 2: {message}")
 
+        # Get messages and their inbox relations
+        statement = select(
+            Message, Inbox
+        ).where(col(Inbox.id) == col(Message.inbox_id))
+        results = session.exec(statement)
+        for m, i in results:
+            print(f"Inbox: {i} | Message: {m}")
+
+        # Use JOIN (https://sqlmodel.tiangolo.com/tutorial/connect/read-connected-data/#join-tables-in-sqlmodel)
+        # "This LEFT OUTER part tells the database that we want to keep everything on the first table, the one on the LEFT in the imaginary space, even if those rows would be left out, so we want it to include the OUTER rows too." - from the docs
+        statement = select(Message, Inbox).join(Inbox, isouter=True)
+        results = session.exec(statement)
+        print("Using Join:")
+        for m, i in results:
+            print(f"Inbox: {i} | Message: {m}")
+        
 
 def batch_read():
     with Session(engine) as session:
@@ -76,27 +103,36 @@ def batch_read():
         results = session.exec(statement)
         print(f"Next three rows: {results.all()}")
 
+
 def update():
     with Session(engine) as session:
         # Create a new message
         text = "Update me!"
-        session.add(Message(text=text))
+        session.add(Message(text=text, inbox_id=1))
         session.commit()
-        
+
         # Select it
-        message = session.exec(
-            select(Message).where(Message.text == text)
-        ).one()
+        message = session.exec(select(Message).where(Message.text == text)).one()
         print(f"Message prior to update: {message}")
 
-        # Set a field value
+        # Update text
         message.text = "Updated!"
+        # Update relation
+        message.inbox_id = 2
         # Add and commit
         session.add(message)
         session.commit()
         # Explicitly refresh and print
         session.refresh(message)
         print(f"Updated message: {message}")
+        
+        # Remove relation
+        message.inbox_id = None
+        session.add(message)
+        session.commit()
+        session.refresh(message)
+        print(f"Unliked from inbox: {message}")
+
 
 def delete():
     with Session(engine) as session:
@@ -104,11 +140,9 @@ def delete():
         text = "Delete me!"
         session.add(Message(text=text))
         session.commit()
-        
+
         # Select it
-        message = session.exec(
-            select(Message).where(Message.text == text)
-        ).one()
+        message = session.exec(select(Message).where(Message.text == text)).one()
         print(f"Message prior to deletion: {message}")
 
         # Delete it... but not before commiting the change.
@@ -117,19 +151,19 @@ def delete():
 
         # The object still exists as unexpired
         print("Deleted message:", message)
-        message = session.exec(
-            select(Message).where(Message.text == text)
-        ).first()
-        print(f"Result for messages matching \"{text}\": {message}")
+        message = session.exec(select(Message).where(Message.text == text)).first()
+        print(f'Result for messages matching "{text}": {message}')
+
 
 def main():
     create_db_and_tables()
 
-    # create_test_message()
-    # read_data()
+    create_test_message()
+    read_data()
     # batch_read()
-    # update()
-    delete()
+    update()
+    # delete()
+
 
 if __name__ == "__main__":
     main()

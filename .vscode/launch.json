@@ -1,24 +1,27 @@
 {
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "FastAPI",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "uvicorn",
-            "args": [
-                "inbox.main:app",
-                "--reload"
-            ],
-            "cwd": "${workspaceFolder}",
-        }
-    ],
-    "compounds": [
-        {
-            "name": "dev",
-            "configurations": [
-                "FastAPI"
-            ]
-        }
-    ]
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "FastAPI",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": ["inbox.main:app", "--reload"],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Debug DB",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "inbox.db.db"
+    }
+  ],
+  "compounds": [
+    // {
+    //     "name": "dev",
+    //     "configurations": [
+    //         "FastAPI"
+    //     ]
+    // }
+  ]
 }
