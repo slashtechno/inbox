@@ -53,15 +53,35 @@ def read_data():
         # Get the message matching a query, and if there is more than one (or no) message matching the query, error
         results = session.exec(select(Message).where(col(Message.id) == 1))
         print(f"Row 1: {results.one()}")
-        
+
         # Unlike .one, .get will return None instead of an error if there is no match
         message = session.get(Message, 2)
         print(f"Row 2: {message}")
+
+
+def batch_read():
+    with Session(engine) as session:
+        # Create some messages
+        for i in range(10):
+            session.add(Message(text=str(i)))
+        session.commit()
+
+        # Get the first three messages
+        statement = select(Message).limit(3)
+        results = session.exec(statement)
+        print(f"First three rows: {results.all()}")
+
+        # Get the three after the first three
+        statement = select(Message).offset(3).limit(3)
+        results = session.exec(statement)
+        print(f"Next three rows: {results.all()}")
+
 
 def main():
     create_db_and_tables()
     create_test_message()
     read_data()
+    batch_read()
 
 
 if __name__ == "__main__":
