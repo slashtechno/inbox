@@ -76,13 +76,35 @@ def batch_read():
         results = session.exec(statement)
         print(f"Next three rows: {results.all()}")
 
+def update():
+    with Session(engine) as session:
+        # Create a new message
+        text = "Update me!"
+        session.add(Message(text=text))
+        session.commit()
+        
+        # Select it
+        message = session.exec(
+            select(Message).where(Message.text == text)
+        ).one()
+        print(f"Message prior to update: {message}")
+
+        # Set a field value
+        message.text = "Updated!"
+        # Add and commit
+        session.add(message)
+        session.commit()
+        # Explicitly refresh and print
+        session.refresh(message)
+        print(f"Updated message: {message}")
 
 def main():
     create_db_and_tables()
-    create_test_message()
-    read_data()
-    batch_read()
 
+    # create_test_message()
+    # read_data()
+    # batch_read()
+    update()
 
 if __name__ == "__main__":
     main()
