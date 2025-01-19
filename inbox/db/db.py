@@ -37,18 +37,26 @@ def read_data():
         statement = select(Message)
         results = session.exec(statement)
         # results = results.all() # return an array
-        print("Printing all messages")
-        for m in results:
-            print(f"message: {m}")
+        print(f"First result: {results.first()}")
+        # print("Printing all messages")
+        # for m in results:
+        # print(f"message: {m}")
+
         # Filter rows where the text begins with "Hi" and ends with "!"
         # https://sqlmodel.tiangolo.com/tutorial/where/
         statement = (
             select(Message)
-            .where(col(Message.text).startswith("Hi"))  # noqa: F821
+            .where(col(Message.text).startswith("Hi"))
             .where(col(Message.text).endswith("!"))
         )
         print(session.exec(statement).all())
-
+        # Get the message matching a query, and if there is more than one (or no) message matching the query, error
+        results = session.exec(select(Message).where(col(Message.id) == 1))
+        print(f"Row 1: {results.one()}")
+        
+        # Unlike .one, .get will return None instead of an error if there is no match
+        message = session.get(Message, 2)
+        print(f"Row 2: {message}")
 
 def main():
     create_db_and_tables()
@@ -58,3 +66,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# Getting single rows (https://sqlmodel.tiangolo.com/tutorial/one)
