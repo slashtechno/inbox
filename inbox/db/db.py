@@ -4,7 +4,8 @@ from inbox import settings
 
 class Message(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    text: str
+    # https://sqlmodel.tiangolo.com/tutorial/indexes
+    text: str = Field(index=True)
 
 
 # Echo SQL statements
