@@ -1,4 +1,4 @@
-from sqlmodel import Field, SQLModel, create_engine, Session
+from sqlmodel import Field, SQLModel, create_engine, Session, select
 from inbox import settings
 
 
@@ -29,12 +29,23 @@ def create_test_message():
         session.refresh(test_message)
         print(f"DEBUG: test_message: {test_message}")
 
+def read_data():
+    # https://sqlmodel.tiangolo.com/tutorial/select
+    with Session(engine) as session:
+        statement = select(Message)
+        results = session.exec(statement)
+        # results = results.all() # return an array
+        for m in results:
+            print(f"DEBUG: message: {m}")
+
+
 
 
 
 def main():
     create_db_and_tables()
     create_test_message()
+    read_data()
 
 
 if __name__ == "__main__":
