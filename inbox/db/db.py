@@ -23,14 +23,12 @@ def create_test_message():
         # Add the object to the session
         session.add(test_message)
         session.commit()
-    
-    
-    # Without with:
-    # Create a session (https://sqlmodel.tiangolo.com/tutorial/insert/#create-a-session)
-    # session = Session(engine)
-    # session.add(test_message)
-    # session.commit()
-    # session.close()
+        # access a single field that'll be refreshed (https://sqlmodel.tiangolo.com/tutorial/automatic-id-none-refresh/#print-a-single-field)
+        print(f"DEBUG: test_message text: {test_message.text}")
+        # Explicitly refresh the entire object
+        session.refresh(test_message)
+        print(f"DEBUG: test_message: {test_message}")
+
 
 
 
