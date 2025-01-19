@@ -98,13 +98,38 @@ def update():
         session.refresh(message)
         print(f"Updated message: {message}")
 
+def delete():
+    with Session(engine) as session:
+        # Create a new message
+        text = "Delete me!"
+        session.add(Message(text=text))
+        session.commit()
+        
+        # Select it
+        message = session.exec(
+            select(Message).where(Message.text == text)
+        ).one()
+        print(f"Message prior to deletion: {message}")
+
+        # Delete it... but not before commiting the change.
+        session.delete(message)
+        session.commit()
+
+        # The object still exists as unexpired
+        print("Deleted message:", message)
+        message = session.exec(
+            select(Message).where(Message.text == text)
+        ).first()
+        print(f"Result for messages matching \"{text}\": {message}")
+
 def main():
     create_db_and_tables()
 
     # create_test_message()
     # read_data()
     # batch_read()
-    update()
+    # update()
+    delete()
 
 if __name__ == "__main__":
     main()
