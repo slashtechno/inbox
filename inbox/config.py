@@ -9,10 +9,20 @@ settings = Dynaconf(
 )
 settings.validators.register(
     validators=[
+        Validator("db_url", default="sqlite:///database.db"),
         Validator(
-            "db_url",
-            default="sqlite:///database.db"
-        )
+            "jwt_secret",
+            must_exist=True,
+        ),
+        Validator(
+            "jwt_algorithm",
+            default="HS256",
+        ),
+        Validator(
+            "jwt_expire_minutes",
+            # 2 days. People can always log in again
+            default=2880,
+        ),
     ],
 )
 
