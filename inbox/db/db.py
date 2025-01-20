@@ -2,6 +2,20 @@ from sqlmodel import Field, SQLModel, col, create_engine, Session, select, Relat
 from inbox import settings
 
 
+class MessageInboxLink(SQLModel, table=True):
+    inbox_id: int | None = Field(
+        default = None,
+        foreign_key="inbox.id",
+        primary_key=True
+    )
+    hero_id: int | None = Field(
+        default=None,
+        foreign_key="message.id",
+        primary_key=True
+    )
+
+
+
 class Inbox(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     name: str = Field(index=True)
@@ -9,7 +23,8 @@ class Inbox(SQLModel, table=True):
     # Seems putting Message in quotes is a form of a forward reference
     # Setting cascade_delete to true means that if the inbox is deleted, all the messages will be too. By default, without this, their inbox value would just be set to null
     # cascade_delete only works with deletions from within the program but should coexist with ondelete (https://sqlmodel.tiangolo.com/tutorial/relationship-attributes/cascade-delete-relationships/#using-cascade_delete-or-ondelete)
-    messages: list["Message"] = Relationship(back_populates="inbox", cascade_delete=True)
+    # It seems that cascade_delete doesn't work with a many-to-many-relationship though
+    messages: list["Message"] = Relationship(back_populates="inboxes", link_model=MessageInboxLink)
 
 
 class Message(SQLModel, table=True):
@@ -23,8 +38,7 @@ class Message(SQLModel, table=True):
     # SET NULL: Set this foreign key (hero.team_id) field to NULL when the related record is deleted.
     # RESTRICT: Prevent the deletion of this record (hero) if there is a foreign key value by raising an error.
 
-    inbox_id: int | None = Field(foreign_key="inbox.id", default="1", ondelete="CASCADE")
-    inbox: Inbox | None = Relationship(back_populates="messages")
+    inboxes: list[Inbox] | None = Relationship(back_populates="messages", link_model=MessageInboxLink)
 
 
 # Print SQL statements in echo is True
@@ -43,19 +57,19 @@ def create_test_message():
 
         # Create a Message object
         test_messages = [
-            Message(text="Hello, SQL!", inbox=inbox_primary),
+            Message(text="Hello, SQL!", inboxes=[inbox_primary]),
             Message(text="Hi, SQL!", )
         ]
 
-        # Add the second message to the secondary inbox
+        # Add the second message to the secondary inbox and primary inbox
         inbox_secondary = Inbox(name="Secondary Inbox", messages=[test_messages[1]])
         print(inbox_secondary.messages)
-        
+        inbox_primary.messages.append(test_messages[1])
         # Add the objects to the session
         [session.add(m) for m in test_messages]
         session.commit()
         # access a single field that'll be refreshed (https://sqlmodel.tiangolo.com/tutorial/automatic-id-none-refresh/#print-a-single-field)
-        print(f"test_message inbox: {test_messages[0].inbox}")
+        print(f"second test message inboxes: {test_messages[1].inboxes}")
         # Explicitly refresh the entire object
         session.refresh(test_messages[0])
         print(f"test_message: {test_messages[0]}")
@@ -131,30 +145,33 @@ def update():
     with Session(engine) as session:
         # Create a new message
         text = "Update me!"
-        session.add(Message(text=text, inbox_id=1))
+        session.add(Message(text=text))
         session.commit()
 
-        # Select it
+        # Select the message
         message = session.exec(select(Message).where(Message.text == text)).one()
-        print(f"Message prior to update: {message}")
+        print(f"Message prior to update: {message} | message is in {message.inboxes}")
+        # Select an inbox
+        inbox = session.exec(select(Inbox).where(Inbox.name == "Primary Inbox")).one()
+
 
         # Update text
         message.text = "Updated!"
         # Update relation
-        message.inbox_id = 2
+        message.inboxes.append(inbox)
         # Add and commit
         session.add(message)
         session.commit()
         # Explicitly refresh and print
         session.refresh(message)
-        print(f"Updated message: {message}")
+        print(f"Updated message: {message} | message is in {message.inboxes}")
 
         # Remove relation
-        message.inbox = None
+        inbox.messages.remove(message)
         session.add(message)
         session.commit()
         session.refresh(message)
-        print(f"Unlinked from inbox: {message} | inbox: {message.inbox}")
+        print(f"Unlinked from inbox: {message} | inboxes: {message.inboxes}")
 
 
 def delete():
@@ -182,7 +199,7 @@ def main():
     create_db_and_tables()
 
     create_test_message()
-    read_data()
+    # read_data()
     # batch_read()
     update()
     # delete()
