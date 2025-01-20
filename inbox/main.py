@@ -1,21 +1,34 @@
 import importlib
 from pathlib import Path
+from fastapi.concurrency import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI
-# from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.cors import CORSMiddleware
+
+from inbox.db import create_db_and_tables, get_session
 
 # https://sqlmodel.tiangolo.com/tutorial/create-db-and-table/#sqlmodel-metadata-order-matters
 
-app = FastAPI()
+# https://fastapi.tiangolo.com/advanced/events/#lifespan
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # On startup:
+    create_db_and_tables()
+    # ---
+    yield
+    # ---
+    # On shutdown:
+
+app = FastAPI(lifespan=lifespan)
 
 
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=["*"],
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 # Dynamically import all routers
@@ -27,6 +40,7 @@ for path in routers_dir.glob("*.py"):
         # If the module has a router attribute, include it in the app
         if hasattr(module, "router"):
             app.include_router(getattr(module, "router"))
+
 
 if __name__ == "__main__":
     # Go to http://localhost:8000/docs to see the Swagger UI
