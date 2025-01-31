@@ -3,7 +3,7 @@ A rudimentary API for creating "inboxes", which you can receive messages to. Eve
 
 Please note, content is user-generated so use at your own risk.
 
-<!-- Visit [TK](https://TK) to see the Swagger UI and try out the API. -->
+I also used Inbox as a learning project to get famillar with SQLModel and OAuth with FastAPI.
 
 ## Endpoints
 Besides `/login`, data is sent via a JSON body.  
