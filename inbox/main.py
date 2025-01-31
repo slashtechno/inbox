@@ -33,7 +33,7 @@ app.add_middleware(
 
 @app.get("/", response_class=PlainTextResponse)
 async def help():
-    return "This is Inbox, a rudimentary system to create \"inboxes\", which you can send and receive messages to. Uses SQLModel and FastAPI. See the source code at https://github.com/slashtecho/inbox.\n\nGo to https://inbox.ab.hackclub.app/docs to start using the API."
+    return "This is Inbox, a rudimentary system to create \"inboxes\", which you can send and receive messages to. Uses SQLModel and FastAPI. See the source code at https://github.com/slashtecho/inbox.\n\nGo to https://inbox.ab.hackclub.app/docs to start using the API.\nPlease note, content is user-generated so use at your own risk."
 
 # Dynamically import all routers
 routers_dir = Path(__file__).parent / "routers"

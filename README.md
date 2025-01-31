@@ -1,5 +1,7 @@
 # Inbox
-A rudimentary API for creating "inboxes", which you can receive messages. Even without creating an inbox, you can send messages to other inboxes.
+A rudimentary API for creating "inboxes", which you can receive messages to. Even without creating an inbox, you can send messages to other inboxes.
+
+Please note, content is user-generated so use at your own risk.
 
 <!-- Visit [TK](https://TK) to see the Swagger UI and try out the API. -->
 
