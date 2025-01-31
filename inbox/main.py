@@ -4,6 +4,7 @@ from fastapi.concurrency import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import PlainTextResponse
 
 from inbox.db import create_db_and_tables
 
@@ -30,6 +31,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/", response_class=PlainTextResponse)
+async def help():
+    return "This is Inbox, a rudimentary system to create \"inboxes\", which you can send and receive messages to. Uses SQLModel and FastAPI. See the source code at https://github.com/slashtecho/inbox"
 
 # Dynamically import all routers
 routers_dir = Path(__file__).parent / "routers"

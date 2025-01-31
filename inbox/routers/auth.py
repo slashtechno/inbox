@@ -4,7 +4,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 import jwt
 from pydantic import BaseModel
 from sqlmodel import Session, col, select
-from inbox.db.models.inbox import Inbox
+from inbox.db.models.models import Inbox
 from typing import Annotated
 from inbox.db import get_session
 from passlib.context import CryptContext
@@ -86,7 +86,7 @@ def create_access_token(
     return encoded_jwt
 
 
-@router.post("/login")
+@router.post("/login", summary="Login")
 async def login_for_access_token(
     form_data: Annotated[
         # https://fastapi.tiangolo.com/tutorial/security/simple-oauth2/#oauth2passwordrequestform

@@ -6,7 +6,7 @@ from inbox import settings
 
 # Print SQL statements in echo is True
 # print(f"DEBUG: {settings.db_url}")
-engine = create_engine(settings.db_url, echo=True)
+engine = create_engine(settings.db_url, echo=False)
 
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
